@@ -167,7 +167,8 @@
   .card p{ margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-soft); flex-grow: 1; }
   .card .foot{ display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
   .card a.link{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent); }
-  .card .del{ background: none; border: none; color: var(--text-soft); font-size: 11px; cursor: pointer; padding: 0; font-family: 'IBM Plex Mono', monospace; }
+  .card .del, .card .edit{ background: none; border: none; color: var(--text-soft); font-size: 11px; cursor: pointer; padding: 0; font-family: 'IBM Plex Mono', monospace; }
+  .card .edit:hover{ color: var(--accent); }
   .card .del:hover{ color: var(--accent); }
 
   .empty{ grid-column: 1 / -1; border: 1px dashed var(--border); border-radius: var(--radius); padding: 44px 20px; text-align: center; color: var(--text-soft); font-size: 14px; }
@@ -348,7 +349,7 @@ Fechas</p>
     </div>
 
     <section class="add-panel" id="addPanel">
-      <h3>NUEVO PROYECTO</h3>
+      <h3 id="addPanelTitle">NUEVO PROYECTO</h3>
       <div class="field-row">
         <div class="field">
           <label>Nombre</label>
@@ -424,7 +425,16 @@ Fechas</p>
   $('hireBtn').addEventListener('click', () => {
     const text = $('ownerContact').innerText || '';
     const match = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-    window.location.href = 'mailto:' + (match ? match[0] : 'cobando1501@gmail.com');
+    const email = match ? match[0] : 'cobando1501@gmail.com';
+    // Respaldo: copia el correo al portapapeles, porque navegadores internos
+    // como el de Instagram/TikTok suelen bloquear los links "mailto:".
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(email).catch(() => {});
+    }
+    window.location.href = 'mailto:' + email;
+    setTimeout(() => {
+      alert('Correo: ' + email + '\n\n(Ya lo copié por si tu app de correo no se abrió automáticamente — puedes pegarlo donde quieras escribirme.)');
+    }, 400);
   });
 
   // ---------- Máquina de escribir (roles del hero) ----------
@@ -652,6 +662,7 @@ Fechas</p>
           ${linkHtml}
           <div style="display:flex; gap:8px; align-items:center;">
             ${runBtnHtml}
+            <button class="edit owner-only" data-id="${p.id}">✎ editar</button>
             <button class="del owner-only" data-id="${p.id}">eliminar</button>
           </div>
         </div>
@@ -673,6 +684,22 @@ Fechas</p>
         const { error } = await sb.from('projects').delete().eq('id', btn.dataset.id);
         if(error){ console.error('No se pudo eliminar', error); return; }
         loadProjects();
+      });
+    });
+
+    grid.querySelectorAll('.edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const proj = projects.find(p => String(p.id) === String(btn.dataset.id));
+        if(!proj) return;
+        editingProjectId = proj.id;
+        $('addPanelTitle').innerText = 'EDITANDO PROYECTO';
+        $('pName').value = proj.name || '';
+        $('pLink').value = proj.link || '';
+        $('pDesc').value = proj.description || '';
+        $('pCode').value = proj.code || '';
+        $('saveProjectBtn').innerText = 'Guardar cambios';
+        $('addPanel').classList.add('open');
+        $('addPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
 
@@ -800,8 +827,19 @@ await __main()`;
     }
   }
 
-  $('toggleAddBtn').addEventListener('click', () => { $('addPanel').classList.toggle('open'); });
+  let editingProjectId = null;
+
+  $('toggleAddBtn').addEventListener('click', () => {
+    editingProjectId = null;
+    $('addPanelTitle').innerText = 'NUEVO PROYECTO';
+    $('saveProjectBtn').innerText = 'Guardar proyecto';
+    $('pName').value = ''; $('pLink').value = ''; $('pDesc').value = ''; $('pCode').value = '';
+    $('addPanel').classList.toggle('open');
+  });
   $('cancelAddBtn').addEventListener('click', () => {
+    editingProjectId = null;
+    $('addPanelTitle').innerText = 'NUEVO PROYECTO';
+    $('saveProjectBtn').innerText = 'Guardar proyecto';
     $('addPanel').classList.remove('open');
     $('pName').value = ''; $('pLink').value = ''; $('pDesc').value = ''; $('pCode').value = '';
   });
@@ -814,17 +852,23 @@ await __main()`;
       $('pName').focus();
       return;
     }
-    const { error } = await sb.from('projects').insert({
+    const payload = {
       name,
       link: $('pLink').value.trim(),
       description: $('pDesc').value.trim(),
       code: $('pCode').value
-    });
+    };
+    const { error } = editingProjectId
+      ? await sb.from('projects').update(payload).eq('id', editingProjectId)
+      : await sb.from('projects').insert(payload);
     if(error){
       console.error('No se pudo guardar el proyecto', error);
       alert('No se pudo guardar el proyecto: ' + error.message);
       return;
     }
+    editingProjectId = null;
+    $('addPanelTitle').innerText = 'NUEVO PROYECTO';
+    $('saveProjectBtn').innerText = 'Guardar proyecto';
     $('pName').value = ''; $('pLink').value = ''; $('pDesc').value = ''; $('pCode').value = '';
     $('addPanel').classList.remove('open');
     loadProjects();
