@@ -231,6 +231,49 @@
   /* ---------- Fondo ---------- */
   html{ background: #000000; }
   body{ background: transparent; }
+
+  /* ---------- Optimización para celular ---------- */
+  html{ -webkit-text-size-adjust: 100%; }
+  body{ overflow-x: hidden; }
+
+  @media (max-width: 680px){
+    /* La barra del dueño deja de flotar encima del menú y pasa a ir arriba,
+       en su propia franja de ancho completo — así nunca se encima con
+       la barra flotante de navegación. */
+    .ownerbar{
+      position: static; width: 100%; justify-content: center; flex-wrap: wrap;
+      padding: 10px 14px; gap: 8px; border-bottom: 1px solid var(--border);
+      background: rgba(16,16,18,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .ownerbar .pill{ padding: 8px 14px; font-size: 12.5px; }
+    .auth-popover{
+      position: fixed; top: auto; bottom: 16px; left: 16px; right: 16px;
+      width: auto; max-width: none; z-index: 40;
+    }
+    .floatnav{ top: 8px; margin-top: 10px; }
+
+    .page{ padding: 0 16px; }
+    .hero{ padding: 24px 0 44px; }
+    .hero-grid{ gap: 26px; }
+    .stat-card{ padding: 22px; gap: 20px; }
+    .typewriter-wrap{ font-size: 15px; max-width: 100%; word-break: break-word; }
+
+    .about-block{ padding: 16px 0; }
+    .services-head h2{ font-size: 24px; }
+    .section-head-row h2{ font-size: 22px; }
+
+    /* Que el pie de cada tarjeta de proyecto (link + ejecutar/editar/eliminar)
+       pase a varias líneas en vez de desbordarse en pantallas angostas. */
+    .card .foot{ flex-wrap: wrap; row-gap: 8px; }
+    .card .foot > div{ flex-wrap: wrap; row-gap: 6px; }
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 380px){
+    .floatnav button{ padding: 9px; }
+    .floatnav{ gap: 2px; padding: 5px; }
+    .hero-title{ font-size: 32px; }
+  }
 </style>
 </head>
 <body>
